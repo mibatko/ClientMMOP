@@ -1,0 +1,14 @@
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.control.Button?>
+
+<VBox xmlns:fx="http://javafx.com/fxml" alignment="center">
+    <TextArea fx:id="chatTextArea" VBox.vgrow="ALWAYS" editable="false"></TextArea>
+    <HBox>
+        <TextField fx:id="messageTextField" HBox.hgrow="ALWAYS"></TextField>
+        <Button fx:id="sendMessageButton" text="Send" defaultButton="true" onAction="#onSendMessageButtonClick"></Button>
+        <Button fx:id="clearChatButton" text="Clear" cancelButton="true" onAction="#onClearChatButtonClick"></Button>
+    </HBox>
+</VBox>
