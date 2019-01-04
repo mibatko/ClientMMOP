@@ -9,15 +9,17 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 
 public class Controller {
+    //TODO: Gracefully disconnecting when closed.
+    //TODO: Handle 'exit' message.
 
     private Socket socket;
-    private BufferedReader echoes;
-    private PrintWriter stringToEcho;
+    private BufferedReader input;
+    private PrintWriter output;
+
+    private static final int PORT = 6045;
+    private static final String SERVER_ADDRESS = "localhost";
 
     @FXML
     private TextArea chatTextArea;
@@ -28,28 +30,16 @@ public class Controller {
     @FXML
     public void initialize() {
         try {
-            socket = new Socket("localhost", 6045);
-            echoes = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            stringToEcho = new PrintWriter(socket.getOutputStream(), true);
+            chatTextArea.appendText("Connecting to " + SERVER_ADDRESS + " on port " + PORT + "...\n");
+            socket = new Socket(SERVER_ADDRESS, PORT);
+            input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            output = new PrintWriter(socket.getOutputStream(), true);
+
+            Netcode netcode = new Netcode(this, input);
+            netcode.start();
         }
         catch(IOException exception) {
-            System.out.println("Client error: " + exception.getMessage());
-        }
-    }
-
-    private String printDate() {
-        DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
-        Date date = new Date();
-        return dateFormat.format(date);
-    }
-
-    private void talkWithServer() {
-        try {
-            stringToEcho.println(messageTextField.getText());
-            chatTextArea.appendText(echoes.readLine() + "\n");
-        }
-        catch (IOException exception) {
-            System.out.println("Client error: " + exception.getMessage());
+            printToTextArea("Client error: " + exception.getMessage());
         }
     }
 
@@ -61,8 +51,7 @@ public class Controller {
     @FXML
     public void onSendMessageButtonClick() {
         if(!messageTextField.getText().isBlank())
-            //chatTextArea.appendText(printDate() + " Me: " + messageTextField.getText() + "\n");
-            talkWithServer();
+            sendMessageToServer();
 
         messageTextField.clear();
     }
@@ -70,5 +59,13 @@ public class Controller {
     @FXML
     public void onClearChatButtonClick() {
         chatTextArea.clear();
+    }
+
+    private void sendMessageToServer() {
+        output.println(messageTextField.getText());
+    }
+
+    void printToTextArea(String message) {
+        chatTextArea.appendText(message + "\n");
     }
 }
