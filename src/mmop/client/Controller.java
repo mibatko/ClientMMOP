@@ -18,8 +18,8 @@ public class Controller {
     private BufferedReader input;
     private PrintWriter output;
 
-    private static final int PORT = 6045;
-    private static final String SERVER_ADDRESS = "localhost";
+    private static final int PORT = 60321;
+    private static final String SERVER_ADDRESS = "18.197.197.247";
 
     @FXML
     private TextArea chatTextArea;
