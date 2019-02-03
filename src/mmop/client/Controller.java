@@ -1,8 +1,12 @@
 package mmop.client;
 
 import javafx.fxml.FXML;
+import javafx.scene.canvas.Canvas;
+import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.scene.input.MouseEvent;
+import javafx.scene.paint.Color;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -25,6 +29,10 @@ public class Controller {
     private TextField messageTextField;
 
     @FXML
+    private Canvas drawAreaCanvas;
+    private GraphicsContext drawGraphicsContext;
+
+    @FXML
     public void initialize() {
         try {
             chatTextArea.appendText("Connecting to " + SERVER_ADDRESS + " on port " + PORT + "...\n");
@@ -34,10 +42,18 @@ public class Controller {
 
             Netcode netcode = new Netcode(this, input);
             netcode.start();
+
+            prepareCanvas();
         }
         catch(IOException exception) {
             printToTextArea("Client error: " + exception.getMessage());
         }
+    }
+
+    private void prepareCanvas() {
+        drawGraphicsContext = drawAreaCanvas.getGraphicsContext2D();
+        drawGraphicsContext.setFill(Color.WHITE);
+        drawGraphicsContext.fillRect(0, 0, drawAreaCanvas.getWidth(), drawAreaCanvas.getHeight());
     }
 
     @FXML
@@ -54,8 +70,32 @@ public class Controller {
     }
 
     @FXML
-    public void onClearChatButtonClick() {
-        chatTextArea.clear();
+    public void onClearButtonClick() {
+        //chatTextArea.clear();
+        prepareCanvas();
+    }
+
+    @FXML
+    public void onCanvasMousePressed(MouseEvent event) {
+        drawGraphicsContext.beginPath();
+        drawGraphicsContext.moveTo(event.getX(), event.getY());
+        drawGraphicsContext.stroke();
+    }
+
+    @FXML
+    public void onCanvasMouseDragged(MouseEvent event) {
+        drawGraphicsContext.lineTo(event.getX(), event.getY());
+        drawGraphicsContext.stroke();
+        drawGraphicsContext.closePath();
+        drawGraphicsContext.beginPath();
+        drawGraphicsContext.moveTo(event.getX(), event.getY());
+    }
+
+    @FXML
+    public void onCanvasMouseReleased(MouseEvent event) {
+        drawGraphicsContext.lineTo(event.getX(), event.getY());
+        drawGraphicsContext.stroke();
+        drawGraphicsContext.closePath();
     }
 
     private void sendMessageToServer() {
