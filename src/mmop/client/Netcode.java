@@ -18,7 +18,12 @@ public class Netcode extends Thread {
         try {
             while(true) {
                 String message = input.readLine();
-                controller.printToTextArea(message);
+                if(message.equals("\tSERVER INFO: isDrawing=true")) {
+                    controller.startDrawing();
+                }
+                else {
+                    controller.printToTextArea(message);
+                }
             }
         }
         catch(IOException error) {

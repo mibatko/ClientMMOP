@@ -31,6 +31,7 @@ public class Controller {
     @FXML
     private Canvas drawAreaCanvas;
     private GraphicsContext drawGraphicsContext;
+    private boolean isDrawing = false;
 
     @FXML
     public void initialize() {
@@ -56,6 +57,10 @@ public class Controller {
         drawGraphicsContext.fillRect(0, 0, drawAreaCanvas.getWidth(), drawAreaCanvas.getHeight());
     }
 
+    public void startDrawing() {
+        isDrawing = true;
+    }
+
     @FXML
     void focusOnMessageTextField() {
         messageTextField.requestFocus();
@@ -71,31 +76,37 @@ public class Controller {
 
     @FXML
     public void onClearButtonClick() {
-        //chatTextArea.clear();
+        chatTextArea.clear();
         prepareCanvas();
     }
 
     @FXML
     public void onCanvasMousePressed(MouseEvent event) {
-        drawGraphicsContext.beginPath();
-        drawGraphicsContext.moveTo(event.getX(), event.getY());
-        drawGraphicsContext.stroke();
+        if(isDrawing) {
+            drawGraphicsContext.beginPath();
+            drawGraphicsContext.moveTo(event.getX(), event.getY());
+            drawGraphicsContext.stroke();
+        }
     }
 
     @FXML
     public void onCanvasMouseDragged(MouseEvent event) {
-        drawGraphicsContext.lineTo(event.getX(), event.getY());
-        drawGraphicsContext.stroke();
-        drawGraphicsContext.closePath();
-        drawGraphicsContext.beginPath();
-        drawGraphicsContext.moveTo(event.getX(), event.getY());
+        if(isDrawing) {
+            drawGraphicsContext.lineTo(event.getX(), event.getY());
+            drawGraphicsContext.stroke();
+            drawGraphicsContext.closePath();
+            drawGraphicsContext.beginPath();
+            drawGraphicsContext.moveTo(event.getX(), event.getY());
+        }
     }
 
     @FXML
     public void onCanvasMouseReleased(MouseEvent event) {
-        drawGraphicsContext.lineTo(event.getX(), event.getY());
-        drawGraphicsContext.stroke();
-        drawGraphicsContext.closePath();
+        if(isDrawing) {
+            drawGraphicsContext.lineTo(event.getX(), event.getY());
+            drawGraphicsContext.stroke();
+            drawGraphicsContext.closePath();
+        }
     }
 
     private void sendMessageToServer() {
