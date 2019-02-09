@@ -1,8 +1,12 @@
 package mmop.client;
 
 import javafx.fxml.FXML;
+import javafx.scene.canvas.Canvas;
+import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.scene.input.MouseEvent;
+import javafx.scene.paint.Color;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -10,56 +14,61 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 
-//Klasa obsługująca GUI
 public class Controller {
-    //TODO: Gracefully disconnecting when closed.
-    //TODO: Handle 'exit' message.
-
-    //Dodatkowe elementy wymagane do nawiązania połączenia - gniazdo sieciowe i strumienie I/O
-    //Prawdopodobnie lepiej byłoby je zawrzeń w innej klasie
     private Socket socket;
     private BufferedReader input;
     private PrintWriter output;
 
     private static final int PORT = 60321;
-    private static final String SERVER_ADDRESS = "18.197.197.247";
+    private static final String SERVER_ADDRESS = "localhost"; //"18.197.197.247";
 
-    //Zmienne poprzedzone @FXML reprezentują poszczególne elementy GUI. Nazwa zmiennej musi pokrywać się z nazwą elementu w pliku FXML
     @FXML
     private TextArea chatTextArea;
 
     @FXML
     private TextField messageTextField;
 
+    @FXML
+    private Canvas drawAreaCanvas;
+    private GraphicsContext drawGraphicsContext;
+    private boolean isDrawing = false;
 
-    //Pierwsza metoda kontrolera to przygotowanie wszytskich czynności któe muszą poprzedzić wyświetlenie GUI.
-    //W naszym wypadku nawiązujemy połączenie sieciowe z serwerem.
+    private static final int DRAW_THROTTLE_RATIO = 5;
+    private int drawThrottle;
+
     @FXML
     public void initialize() {
-        //Zawarte w try-catch gdyż używane klasy i metody generują wyjątki
         try {
             chatTextArea.appendText("Connecting to " + SERVER_ADDRESS + " on port " + PORT + "...\n");
             socket = new Socket(SERVER_ADDRESS, PORT);
             input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             output = new PrintWriter(socket.getOutputStream(), true);
 
-            //Po nawiązaniu połączenia utwórz instancję klasy Netcode, która wielowątkowo obsługuje czynności związane z połączeniem z serwerem
-            //Klasa dziedziczy po klasie Thread dlatego po utworzeniu instancji uruchamiamy nowy wątek metodą start()
             Netcode netcode = new Netcode(this, input);
             netcode.start();
+
+            prepareCanvas();
         }
         catch(IOException exception) {
             printToTextArea("Client error: " + exception.getMessage());
         }
     }
 
-    //Metoda suatwiająca pole tekstowe do wpisywania wiadomości jako aktywny element GUI. Aby można było pisać od razu po uruchomieniu aplikacji.
+    public void prepareCanvas() {
+        drawGraphicsContext = drawAreaCanvas.getGraphicsContext2D();
+        drawGraphicsContext.setFill(Color.WHITE);
+        drawGraphicsContext.fillRect(0, 0, drawAreaCanvas.getWidth(), drawAreaCanvas.getHeight());
+    }
+
+    public void startDrawing() {
+        isDrawing = true;
+    }
+
     @FXML
     void focusOnMessageTextField() {
         messageTextField.requestFocus();
     }
 
-    //Kod wywoływany po naciśnieniu przycisku sendMessage
     @FXML
     public void onSendMessageButtonClick() {
         if(!messageTextField.getText().isBlank())
@@ -68,18 +77,60 @@ public class Controller {
         messageTextField.clear();
     }
 
-    //Kod wywolywany po nacisnieniu przycisku clearChat
     @FXML
-    public void onClearChatButtonClick() {
+    public void onClearButtonClick() {
         chatTextArea.clear();
     }
 
-    //Wysylanie wiadomosci do serwera przez strumien wyjscia
+    @FXML
+    public void onCanvasMousePressed(MouseEvent event) {
+        if(isDrawing) {
+            drawThrottle = 0;
+            output.println("DRAW_PRESS:" + event.getX() + ";" + event.getY());
+        }
+    }
+
+    @FXML
+    public void onCanvasMouseDragged(MouseEvent event) {
+        if(isDrawing) {
+            drawThrottle++;
+            if(drawThrottle % DRAW_THROTTLE_RATIO == 0) {
+                output.println("DRAW_DRAG:" + event.getX() + ";" + event.getY());
+            }
+        }
+    }
+
+    @FXML
+    public void onCanvasMouseReleased(MouseEvent event) {
+        if(isDrawing) {
+            output.println("DRAW_RELEASE:" + event.getX() + ";" + event.getY());
+        }
+    }
+
+    public void drawPress(double x, double y) {
+        drawGraphicsContext.beginPath();
+        drawGraphicsContext.moveTo(x, y);
+        drawGraphicsContext.stroke();
+    }
+
+    public void drawDrag(double x, double y) {
+        drawGraphicsContext.lineTo(x, y);
+        drawGraphicsContext.stroke();
+        drawGraphicsContext.closePath();
+        drawGraphicsContext.beginPath();
+        drawGraphicsContext.moveTo(x, y);
+    }
+
+    public void drawRelease(double x, double y) {
+        drawGraphicsContext.lineTo(x, y);
+        drawGraphicsContext.stroke();
+        drawGraphicsContext.closePath();
+    }
+
     private void sendMessageToServer() {
         output.println(messageTextField.getText());
     }
 
-    //Drukowanie tektu w polu chactu
     void printToTextArea(String message) {
         chatTextArea.appendText(message + "\n");
     }
