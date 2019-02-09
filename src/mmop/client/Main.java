@@ -18,7 +18,7 @@ public class Main extends Application {
         Parent root = loader.load();
 
         primaryStage.setTitle("Massive Multiplayer Online Pictionary");
-        primaryStage.setScene(new Scene(root, 850, 525));
+        primaryStage.setScene(new Scene(root, 1100, 525));
         primaryStage.getIcons().add(new Image("file:assets/brushIcon.png"));
 
         controller.focusOnMessageTextField();

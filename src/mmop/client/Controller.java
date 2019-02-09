@@ -33,6 +33,9 @@ public class Controller {
     private GraphicsContext drawGraphicsContext;
     private boolean isDrawing = false;
 
+    private static final int DRAW_THROTTLE_RATIO = 5;
+    private int drawThrottle;
+
     @FXML
     public void initialize() {
         try {
@@ -51,7 +54,7 @@ public class Controller {
         }
     }
 
-    private void prepareCanvas() {
+    public void prepareCanvas() {
         drawGraphicsContext = drawAreaCanvas.getGraphicsContext2D();
         drawGraphicsContext.setFill(Color.WHITE);
         drawGraphicsContext.fillRect(0, 0, drawAreaCanvas.getWidth(), drawAreaCanvas.getHeight());
@@ -77,36 +80,51 @@ public class Controller {
     @FXML
     public void onClearButtonClick() {
         chatTextArea.clear();
-        prepareCanvas();
     }
 
     @FXML
     public void onCanvasMousePressed(MouseEvent event) {
         if(isDrawing) {
-            drawGraphicsContext.beginPath();
-            drawGraphicsContext.moveTo(event.getX(), event.getY());
-            drawGraphicsContext.stroke();
+            drawThrottle = 0;
+            output.println("DRAW_PRESS:" + event.getX() + ";" + event.getY());
         }
     }
 
     @FXML
     public void onCanvasMouseDragged(MouseEvent event) {
         if(isDrawing) {
-            drawGraphicsContext.lineTo(event.getX(), event.getY());
-            drawGraphicsContext.stroke();
-            drawGraphicsContext.closePath();
-            drawGraphicsContext.beginPath();
-            drawGraphicsContext.moveTo(event.getX(), event.getY());
+            drawThrottle++;
+            if(drawThrottle % DRAW_THROTTLE_RATIO == 0) {
+                output.println("DRAW_DRAG:" + event.getX() + ";" + event.getY());
+            }
         }
     }
 
     @FXML
     public void onCanvasMouseReleased(MouseEvent event) {
         if(isDrawing) {
-            drawGraphicsContext.lineTo(event.getX(), event.getY());
-            drawGraphicsContext.stroke();
-            drawGraphicsContext.closePath();
+            output.println("DRAW_RELEASE:" + event.getX() + ";" + event.getY());
         }
+    }
+
+    public void drawPress(double x, double y) {
+        drawGraphicsContext.beginPath();
+        drawGraphicsContext.moveTo(x, y);
+        drawGraphicsContext.stroke();
+    }
+
+    public void drawDrag(double x, double y) {
+        drawGraphicsContext.lineTo(x, y);
+        drawGraphicsContext.stroke();
+        drawGraphicsContext.closePath();
+        drawGraphicsContext.beginPath();
+        drawGraphicsContext.moveTo(x, y);
+    }
+
+    public void drawRelease(double x, double y) {
+        drawGraphicsContext.lineTo(x, y);
+        drawGraphicsContext.stroke();
+        drawGraphicsContext.closePath();
     }
 
     private void sendMessageToServer() {
